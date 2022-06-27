@@ -11,7 +11,7 @@ def create_db(conn):
                             id SERIAL PRIMARY KEY,
                     first_name VARCHAR(60) NOT NULL,
                      last_name VARCHAR(60) NOT NULL,
-                         email VARCHAR(60) NOT NULL
+                         email VARCHAR(60) NOT NULL UNIQUE
                 );
                 CREATE TABLE IF NOT EXISTS phone(
                               id SERIAL PRIMARY KEY,
@@ -21,11 +21,22 @@ def create_db(conn):
             """)
 
 
-def add_client(conn, first_name, last_name, email):
+def add_client(conn, first_name, last_name, email, phone=None):
     conn.execute("""
-        INSERT INTO client(first_name, last_name, email) 
-        VALUES (%s, %s, %s);            
-    """, (first_name, last_name, email))
+           INSERT INTO client(first_name, last_name, email) 
+           VALUES (%s, %s, %s);            
+       """, (first_name, last_name, email))
+    if phone != None:
+        conn.execute("""
+                   SELECT c.id 
+                     FROM client c
+                    WHERE c.email = %s;                          
+           """, (email,))
+        client_id = conn.fetchone()[0]
+        conn.execute("""
+               INSERT INTO phone(client_id, number_phone)
+               VALUES (%s, %s);
+           """, (client_id, phone))
 
 
 def add_phone(conn, client_id, number_phone):
@@ -71,22 +82,22 @@ def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
           FROM client c
           JOIN phone p on c.id = p.client_id
          WHERE first_name=%s OR last_name = %s OR email = %s OR number_phone = %s
-
     """, (first_name, last_name, email, phone))
     return conn.fetchall()
+
 
 with psycopg2.connect(database="python_client_db", user="postgres", password="123456") as conn:
     with conn.cursor() as cur:
         create_db(cur)
-        add_client(cur, "John", "Smith", "smit@mail.ru")
+        add_client(cur, "John", "Smith", "smit@mail.ru","+99999999999")
         add_client(cur, "Mikchael", "Jordan", "mimimiska@mail.ru")
+        add_client(cur, "Michael", "Tyson", "mimimiska2@mail.ru","+54384958122")
         add_phone(cur, 1, "+78945642113")
-        add_phone(cur, 1, "+78945648913")
+        add_phone(cur, 2, "+78945648913")
         add_phone(cur, 2, "+83883456201")
         change_client(cur, 1, "James", "Bond", "bond@mail.ru")
         delete_phone(cur, 1, "+78945648913")
         delete_client(cur, 1)
         print(find_client(cur, "Mikchael"))
-
     conn.commit()
 conn.close()
