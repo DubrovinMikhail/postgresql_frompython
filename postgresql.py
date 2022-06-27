@@ -46,7 +46,7 @@ def add_phone(conn, client_id, number_phone):
     """, (client_id, number_phone))
 
 
-def change_client(conn, client_id, first_name=None, last_name=None, email=None, phones=None):
+def change_client(conn, client_id, first_name=None, last_name=None, email=None, phone=None):
     conn.execute("""
         UPDATE client
            SET first_name = %s      
@@ -58,6 +58,17 @@ def change_client(conn, client_id, first_name=None, last_name=None, email=None, 
            SET email = %s      
          WHERE id = %s;                 
     """, (first_name, client_id, last_name, client_id, email, client_id,))
+    if phone != None:
+        conn.execute("""
+                   SELECT c.id 
+                     FROM client c
+                    WHERE c.email = %s;                          
+           """, (email,))
+        client_id = conn.fetchone()[0]
+        conn.execute("""
+               INSERT INTO phone(client_id, number_phone)
+               VALUES (%s, %s);
+           """, (client_id, phone))
 
 
 def delete_phone(conn, client_id, phone):
